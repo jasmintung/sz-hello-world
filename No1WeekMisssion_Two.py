@@ -12,7 +12,7 @@ lowRecycle = True
 while recycle:
     print("退出使用请输入大些字母 : Q")
     with open(fileDst, 'r', encoding='utf-8') as f:
-        loadList = json.load(f)                     # JSON转换为 字典DICT
+        loadList = json.load(f)                     # 解析JSON文件中数据
         # print(loadList)
         while highRecycle:
             for i in range(len(loadList)):
@@ -44,7 +44,8 @@ while recycle:
             if choice != "back" and choice != 'Q':
                 for m in range(len(loadListCity)):
                     if choice == loadListCity[m].get('name'):    # 输入正确
-                        print("--->", loadListCity[m].get('area'))
+                        for key in loadListCity[m].get('area'):
+                            print("--->",key)
                         middleRecycle = False
                         lowRecycle = True
                         break
@@ -66,7 +67,7 @@ while recycle:
                     print("无效输入!")
                     break
         while lowRecycle:
-            print("返回上一级请输入: back,回到顶级请输入: roll")
+            print("继续查看XXX区的信息请输入完整区县名称,返回上一级请输入: back,回到顶级请输入: roll")
             endChoice = input("输入: ")
             if endChoice == 'back':
                 highRecycle = False
@@ -84,5 +85,13 @@ while recycle:
                 lowRecycle = False
                 break
             else:
-                print("无效输入!")
+                for m in range(len(loadListCity)):
+                    if endChoice in loadListCity[m].get('area'):
+                            for idArea, areaInfo in enumerate(loadListCity[m].get('area').get(endChoice)):
+                                print(idArea + 1, areaInfo)
+                            break
+                    else:
+                        if m == len(loadListCity) - 1:
+                            print("无效输入!")
+
 
