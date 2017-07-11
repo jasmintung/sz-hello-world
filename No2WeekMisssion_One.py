@@ -3,16 +3,19 @@ import getpass
 
 balance = 0    # 账户余额
 purcharsedgoods = []
+recordLoadDict = []
+dictAccount = {}
 count = 0
 choiceNum = 0
+userName = None
 pwd = None
 urn = None
 L = []
 loginStatue = False
 retryGoodNumber = False
-userfileDst = "F:\pycharmProj\shopcar\\users.txt"
-recordFileDst = "F:\pycharmProj\shopcar\\buyRecords.txt"
-goodsFileDst = "F:\pycharmProj\shopcar\goods.txt"
+userfileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\users.txt"
+recordFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\buyRecords.txt"
+goodsFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\goods.txt"
 while True:
     print("**********欢迎**********")
     loginRole = input("普通用户请输入: 1\n管理员请输入: 2\n退出请输入: 0\n--->")
@@ -79,14 +82,14 @@ while True:
                     print(balance)
 
                 print("可以购买的商品:")    # 列出商品信息
+                with open(goodsFileDst, 'r', encoding='utf-8') as gf:
+                    goods = json.load(gf)
                 while True:
-                    with open(goodsFileDst, 'r', encoding='utf-8') as gf:
-                        goods = json.load(gf)
                     for i in range(len(goods)):
                         if i % 2 == 0:
-                            print("编号 %d " % goods[i])
-                        else:
-                            print(goods[i])
+                            j = i
+                            print("编号: ",goods[i])
+                            print("%s:单价 %f 库存 %d" % (goods[j+1][0], goods[j+1][1],goods[j+1][2]))
                     print("请选择要购买的商品,根据编号选择！")
                     choiceNo = input("请按编号选择,退出请按'Q',返回登录请按'B'")
                     if choiceNo == 'Q':
@@ -102,29 +105,37 @@ while True:
                                 if j % 2 == 0:
                                     if choiceNo == goods[j]:
                                         while True:
-                                            print("请输入购买数量:")
+                                            print("请输入购买数量,否则退出(Q)")
                                             choiceNum = input()
                                             if choiceNum.isdigit():
                                                 retryGoodNumber = True
                                                 print("比较", choiceNum, goods[j + 1][2])
-                                                if int(choiceNum) > int(goods[j + 1][2]):
-                                                    print("库存不够!")
-                                                    print("继续输入:是,选择其它商品输入:否")    # 否的话退出只上一层while循环
-                                                    quitBuy = input("请输入: ")
-                                                    if quitBuy == '是':
-                                                        continue
-                                                    elif quitBuy == '否':
-                                                        retryGoodNumber = False
-                                                        break
+                                                if int(choiceNum) == 0:
+                                                    print("购买数量不能为0!")
                                                 else:
-                                                    break
+                                                    if (int(choiceNum) > int(goods[j + 1][2])) or (int(goods[j + 1][2]) == 0):
+                                                        print("库存不够!")
+                                                        print("继续输入:是,选择其它商品输入:否")    # 否的话退出只上一层while循环
+                                                        quitBuy = input("请输入: ")
+                                                        if quitBuy == '是':
+                                                            continue
+                                                        elif quitBuy == '否':
+                                                            retryGoodNumber = False
+                                                            break
+                                                    else:
+                                                        retryGoodNumber = True
+                                                        break
                                             else:
-                                                print("非法输入!")
+                                                if choiceNum == 'Q':
+                                                    break
+                                                else:
+                                                    print("非法输入!")
+                                                retryGoodNumber = False
                                         if retryGoodNumber is True:
                                             getNumber = 0    # 实际可购买的商品数量
                                             if len(purcharsedgoods) != 0:
                                                 for k in range(len(purcharsedgoods)):
-                                                    if k % 2 == 0:
+                                                    if k % 3 == 0:
                                                         if purcharsedgoods[k] == goods[j + 1][0]:
                                                             print("购物车已有相同的商品")
                                                             # 购物车里已经有相同的商品,只需要更新数量
@@ -133,75 +144,98 @@ while True:
                                                                     balance -= goods[j + 1][1]
                                                                 else:
                                                                     print("您的余额不够了!")
-                                                                    purcharsedgoods[k + 1] += getNumber
                                                                     break
                                                                 getNumber += 1
-                                                                print("增加%d个" % getNumber)
+                                                            print("增加%d个" % getNumber)
                                                             purcharsedgoods[k + 2] += getNumber
+                                                            goods[j + 1][2] -= getNumber
                                                             break
                                                     else:    # 购物车车里还没有这个商品哦
                                                         if k == len(purcharsedgoods) - 1:
+                                                            purcharsedgoods.append(goods[j + 1][0])  # 商品名称
+                                                            purcharsedgoods.append(goods[j + 1][1])  # 商品单价
                                                             print("购物车还无此商品")
                                                             for i in range(int(choiceNum)):
                                                                 if balance >= goods[j + 1][1]:
                                                                     balance -= goods[j + 1][1]
-                                                                    purcharsedgoods.append(goods[j + 1][0])    # 商品名称
-                                                                    purcharsedgoods.append(goods[j + 1][1])    # 商品单价
                                                                 else:
                                                                     print("您的余额不够!")
-                                                                    purcharsedgoods.append(getNumber)
                                                                     break
                                                                 getNumber += 1
-                                                                print("增加%d个" % getNumber)
+                                                            print("增加%d个" % getNumber)
                                                             purcharsedgoods.append(getNumber)
+                                                            goods[j + 1][2] -= getNumber
                                             else:    # 购物车还是空的
                                                 print("购物车还是空的!")
+                                                purcharsedgoods.append(goods[j + 1][0])  # 商品名称
+                                                purcharsedgoods.append(goods[j + 1][1])  # 商品单价
                                                 for i in range(int(choiceNum)):
                                                     if balance >= goods[j + 1][1]:
                                                         balance -= goods[j + 1][1]
-                                                        purcharsedgoods.append(goods[j + 1][0])    # 商品名称
-                                                        purcharsedgoods.append(goods[j + 1][1])    # 商品单价
                                                     else:
                                                         print("您的余额不够!")
-                                                        purcharsedgoods.append(getNumber)
                                                         break
                                                     getNumber += 1
-                                                    print("增加%d个" % getNumber)
+                                                print("增加%d个" % getNumber)
                                                 purcharsedgoods.append(getNumber)
+                                                goods[j + 1][2] -= getNumber
                                     else:
                                         if retryGoodNumber is True:
                                             if j == len(goods) - 1:
                                                 print("抱歉没有这个商品哦")
                     if retryGoodNumber is True:
-                        print("是否继续选购？继续(是),结算(否)")
+                        print("是否继续选购？继续(Y),打印小票(P)")
                         print(len(purcharsedgoods))
                         continueChoice = input()
-                        if continueChoice == "是":
+                        if continueChoice == "Y":
                             pass
-                        else:
+                        elif continueChoice == 'P':
                             if len(purcharsedgoods) == 0:
                                 print("您的购物车是空的!")
                             else:
                                 print("------------------------------")
                                 print("购物总计:")
-                                print("\t\t\t单价*数量\t\t小计")
+                                print("\t名称:\t\t单价*数量\t\t\t小计")
                                 for m in range(len(purcharsedgoods)):
                                     n = 0
                                     if m % 3 == 0:
                                         n = m + 1
-                                        print("名称: %s  " % (purcharsedgoods[m]), purcharsedgoods[n], end='')
+                                        print("\t\t%s\t\t" % (purcharsedgoods[m]), purcharsedgoods[n], end='')
                                         print("*", end='')
                                         print(purcharsedgoods[n+1], end='')
-                                        print("\t\t\t\t\t\t\t", purcharsedgoods[n]*purcharsedgoods[n+1])
+                                        print("\t\t\t\t\t\t", purcharsedgoods[n]*purcharsedgoods[n+1])
                                 print("------------------------------")
                                 print("您的余额是: %d RMB" % balance)
-                                print("是否继续选购？继续(是),退出(其它)")
+                                print("是否继续选购？继续(B),结算(C),放弃(Q)")
                                 continueChoice = input()
-                                if continueChoice == "是":
+                                if continueChoice == "B":
                                     pass
-                                else:
+                                elif continueChoice == "C":
+                                    shopcarList = {}
+                                    print("支付成功!")
+                                    # 将本次交易记录写入文件
+                                    recordLoadDict[userName]["余额"] = balance
+                                    orderNumber = "102498712345"    # 订单编号唯一
+                                    shopcarList["消费时间"] = "20170987-14:59"
+                                    for m in range(len(purcharsedgoods)):
+                                        n = 0
+                                        if m % 3 == 0:
+                                            n = m + 1
+                                            buyThings = [purcharsedgoods[n+1], purcharsedgoods[n]]
+                                            shopcarList[purcharsedgoods[m]] = buyThings
+                                    recordLoadDict[userName][orderNumber] = shopcarList
+                                    print(recordLoadDict)
+                                    with open(recordFileDst, 'w', encoding='utf-8') as wf:
+                                        wf.write(json.dumps(recordLoadDict,ensure_ascii=False))
+                                        wf.flush()
+                                    # 更新商品库存
                                     print("欢迎再次光临!")
                                     break
+                                elif continueChoice == "Q":
+                                    print("欢迎再次光临!")
+                                    break
+                        else:
+                            print("输入有误,退出！！")
         elif loginRole == 2:
             import loginCheck
             # loginCheck()  # 后期这里传入文件的地址,身份验证
