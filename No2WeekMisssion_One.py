@@ -21,6 +21,7 @@ userfileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\users.
 recordFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\buyRecords.txt"
 goodsFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\goods.txt"
 accountFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\accountManager.txt"
+consumerBarcodeFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\consumerBarcode.txt"
 while True:
     print("**********欢迎**********")
     loginRole = input("普通用户请输入: 1\n管理员请输入: 2\n退出请输入: 0\n--->")
@@ -247,29 +248,38 @@ while True:
                                             recordDict = json.load(rcf)
                                     shopcarList = {}
                                     recordLoadDict = {}
-                                    writeFileRecordDict = {}
                                     print("支付成功!")
                                     # 将本次交易记录写入文件
-                                    consumerBarcode += 1
-                                    shopcarList["消费时间"] = "20170987-14:59"
+                                    with open(consumerBarcodeFileDst, 'r', encoding="utf-8") as cbdf:
+                                        fileSize = os.path.getsize(consumerBarcodeFileDst)
+                                        print("fileSize = %d" % fileSize)
+                                        if fileSize == 0:
+                                            fileSize = consumerBarcode
+                                        else:
+                                            serialNo = cbdf.read()
+                                            serialNo = int(serialNo)
+                                            print("serialNo = %d" % serialNo)
+                                            serialNo += 1
+                                            fileSize = serialNo
+                                    with open(consumerBarcodeFileDst, 'w+', encoding="utf-8") as cbdf:
+                                        cbdf.write(str(fileSize))
+                                    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                    shopcarList["消费时间"] = str(now)
                                     for m in range(len(purcharsedgoods)):
                                         n = 0
                                         if m % 3 == 0:
                                             n = m + 1
                                             buyThings = [purcharsedgoods[n+1], purcharsedgoods[n]]
                                             shopcarList[purcharsedgoods[m]] = buyThings
-
-                                    # print(recordLoadDict)
-                                    # recordLoadDict一直在更新
                                     if len(recordDict) == 0:
-                                        recordLoadDict[consumerBarcode] = shopcarList
+                                        recordLoadDict[fileSize] = shopcarList
                                         recordDict[userName] = recordLoadDict
                                     else:
                                         if recordDict.get(userName) is None:    # 还没有当前客户的消费记录
-                                            recordLoadDict[consumerBarcode] = shopcarList
+                                            recordLoadDict[fileSize] = shopcarList
                                             recordDict[userName] = recordLoadDict
                                         else:
-                                            recordDict[userName][consumerBarcode] = shopcarList
+                                            recordDict[userName][fileSize] = shopcarList
                                     print(recordDict)
                                     with open(recordFileDst, 'w', encoding='utf-8') as wf, \
                                          open(goodsFileDst, 'w', encoding='utf-8') as gdf, \
