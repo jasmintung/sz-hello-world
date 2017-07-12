@@ -1,10 +1,14 @@
+import os
 import json
 import getpass
 
 balance = 0    # 账户余额
+consumerBarcode = 0    # 单号
 purcharsedgoods = []
-recordLoadDict = []
+goods = []
+
 dictAccount = {}
+accountInfo = {}
 count = 0
 choiceNum = 0
 userName = None
@@ -13,9 +17,10 @@ urn = None
 L = []
 loginStatue = False
 retryGoodNumber = False
-userfileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\users.txt"
-recordFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\buyRecords.txt"
-goodsFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\goods.txt"
+userfileDst = "F:\pycharmProj\shopcar\\users.txt"
+recordFileDst = "F:\pycharmProj\shopcar\\buyRecords.txt"
+goodsFileDst = "F:\pycharmProj\shopcar\goods.txt"
+accountFileDst = "F:\pycharmProj\shopcar\\accountManager.txt"
 while True:
     print("**********欢迎**********")
     loginRole = input("普通用户请输入: 1\n管理员请输入: 2\n退出请输入: 0\n--->")
@@ -75,20 +80,42 @@ while True:
                                             json.dump(loadDict, f)
                                             f.flush()
             if loginStatue is True:
-                print("您当前的余额是: ")
-                with open(recordFileDst, 'r', encoding='utf-8') as rf:
-                    recordLoadDict = json.load(rf)  # JSON转换
-                    balance = recordLoadDict.get(userName).get("余额")
-                    print(balance)
-
-                print("可以购买的商品:")    # 列出商品信息
+                isUpdateAccount = False
+                with open(accountFileDst, 'r', encoding="utf-8") as af:
+                    fileLength = os.path.getsize(accountFileDst)
+                    if fileLength > 0:
+                        accountInfo = json.load(af)
+                        if userName not in accountInfo:
+                            print("您的账户还没有存钱.")
+                            deposit = int(input("请输入存放的金额: "))
+                            account = {"余额": deposit}
+                            accountInfo[userName] = account
+                            balance = deposit
+                            isUpdateAccount = True
+                        else:
+                            print(accountInfo)
+                            print("您当前的余额是: ")
+                            balance = accountInfo.get(userName).get("余额")
+                            print(balance)
+                            print("可以购买的商品:")  # 列出商品信息
+                    else:
+                        print("您的账户还没有存钱.")
+                        deposit = int(input("请输入存放的金额: "))
+                        account = {"余额": deposit}
+                        accountInfo[userName] = account
+                        balance = deposit
+                        isUpdateAccount = True
+                if isUpdateAccount is True:
+                    with open(accountFileDst, 'w+', encoding="utf-8") as wf:
+                        wf.writelines(json.dumps(accountInfo, ensure_ascii=False))  # 把字典转为json格式存入文件
+                    isUpdateAccount = False
                 with open(goodsFileDst, 'r', encoding='utf-8') as gf:
                     goods = json.load(gf)
                 while True:
                     for i in range(len(goods)):
                         if i % 2 == 0:
                             j = i
-                            print("编号: ",goods[i])
+                            print("编号: ", goods[i])
                             print("%s:单价 %f 库存 %d" % (goods[j+1][0], goods[j+1][1],goods[j+1][2]))
                     print("请选择要购买的商品,根据编号选择！")
                     choiceNo = input("请按编号选择,退出请按'Q',返回登录请按'B'")
@@ -127,10 +154,11 @@ while True:
                                                         break
                                             else:
                                                 if choiceNum == 'Q':
+                                                    retryGoodNumber = False
                                                     break
                                                 else:
                                                     print("非法输入!")
-                                                retryGoodNumber = False
+                                                    retryGoodNumber = False
                                         if retryGoodNumber is True:
                                             getNumber = 0    # 实际可购买的商品数量
                                             if len(purcharsedgoods) != 0:
@@ -192,6 +220,7 @@ while True:
                         elif continueChoice == 'P':
                             if len(purcharsedgoods) == 0:
                                 print("您的购物车是空的!")
+                                purcharsedgoods.clear()
                             else:
                                 print("------------------------------")
                                 print("购物总计:")
@@ -211,11 +240,18 @@ while True:
                                 if continueChoice == "B":
                                     pass
                                 elif continueChoice == "C":
+                                    recordDict = {}
+                                    with open(recordFileDst, 'r', encoding='utf-8') as rcf:
+                                        recordFileLen = os.path.getsize(recordFileDst)
+                                        if recordFileLen > 0:
+                                            recordDict = json.load(rcf)
                                     shopcarList = {}
+                                    recordLoadDict = {}
+                                    writeFileRecordDict = {}
                                     print("支付成功!")
                                     # 将本次交易记录写入文件
-                                    recordLoadDict[userName]["余额"] = balance
-                                    orderNumber = "102498712345"    # 订单编号唯一
+                                    codeId = (1980, )
+                                    consumerBarcode += codeId[0] + 1
                                     shopcarList["消费时间"] = "20170987-14:59"
                                     for m in range(len(purcharsedgoods)):
                                         n = 0
@@ -223,16 +259,28 @@ while True:
                                             n = m + 1
                                             buyThings = [purcharsedgoods[n+1], purcharsedgoods[n]]
                                             shopcarList[purcharsedgoods[m]] = buyThings
-                                    recordLoadDict[userName][orderNumber] = shopcarList
-                                    print(recordLoadDict)
-                                    with open(recordFileDst, 'w', encoding='utf-8') as wf:
-                                        wf.write(json.dumps(recordLoadDict,ensure_ascii=False))
+                                    recordLoadDict[consumerBarcode] = shopcarList
+                                    recordDict.update(recordLoadDict)
+                                    writeFileRecordDict[userName] = recordDict
+                                    print(writeFileRecordDict)
+                                    with open(recordFileDst, 'w', encoding='utf-8') as wf, \
+                                         open(goodsFileDst, 'w', encoding='utf-8') as gdf, \
+                                         open(accountFileDst, 'w', encoding='utf-8') as acf:
+                                        # 更新购买记录
+                                        wf.write(json.dumps(writeFileRecordDict, ensure_ascii=False))
                                         wf.flush()
-                                    # 更新商品库存
+                                        # 更新商品库存
+                                        gdf.write(json.dumps(goods, ensure_ascii=False))
+                                        gdf.flush()
+                                        # 更新个人资产
+                                        accountInfo.get(userName)["余额"] = balance
+                                        acf.write(json.dumps(accountInfo, ensure_ascii=False))
                                     print("欢迎再次光临!")
+                                    purcharsedgoods.clear()
                                     break
                                 elif continueChoice == "Q":
                                     print("欢迎再次光临!")
+                                    purcharsedgoods.clear()
                                     break
                         else:
                             print("输入有误,退出！！")
