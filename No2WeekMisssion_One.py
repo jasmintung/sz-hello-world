@@ -1,12 +1,12 @@
 import os
 import json
 import getpass
+import datetime
 
 balance = 0    # 账户余额
-consumerBarcode = 0    # 单号
+consumerBarcode = 1141880000    # 交易单号每一笔必须不一致,涉及到字典的操作,从文件读取
 purcharsedgoods = []
 goods = []
-
 dictAccount = {}
 accountInfo = {}
 count = 0
@@ -17,10 +17,10 @@ urn = None
 L = []
 loginStatue = False
 retryGoodNumber = False
-userfileDst = "F:\pycharmProj\shopcar\\users.txt"
-recordFileDst = "F:\pycharmProj\shopcar\\buyRecords.txt"
-goodsFileDst = "F:\pycharmProj\shopcar\goods.txt"
-accountFileDst = "F:\pycharmProj\shopcar\\accountManager.txt"
+userfileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\users.txt"
+recordFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\buyRecords.txt"
+goodsFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\goods.txt"
+accountFileDst = "C:\\Users\jasmintung\PycharmProjects\HomePractice\shopcar\\accountManager.txt"
 while True:
     print("**********欢迎**********")
     loginRole = input("普通用户请输入: 1\n管理员请输入: 2\n退出请输入: 0\n--->")
@@ -250,8 +250,7 @@ while True:
                                     writeFileRecordDict = {}
                                     print("支付成功!")
                                     # 将本次交易记录写入文件
-                                    codeId = (1980, )
-                                    consumerBarcode += codeId[0] + 1
+                                    consumerBarcode += 1
                                     shopcarList["消费时间"] = "20170987-14:59"
                                     for m in range(len(purcharsedgoods)):
                                         n = 0
@@ -259,15 +258,24 @@ while True:
                                             n = m + 1
                                             buyThings = [purcharsedgoods[n+1], purcharsedgoods[n]]
                                             shopcarList[purcharsedgoods[m]] = buyThings
-                                    recordLoadDict[consumerBarcode] = shopcarList
-                                    recordDict.update(recordLoadDict)
-                                    writeFileRecordDict[userName] = recordDict
-                                    print(writeFileRecordDict)
+
+                                    # print(recordLoadDict)
+                                    # recordLoadDict一直在更新
+                                    if len(recordDict) == 0:
+                                        recordLoadDict[consumerBarcode] = shopcarList
+                                        recordDict[userName] = recordLoadDict
+                                    else:
+                                        if recordDict.get(userName) is None:    # 还没有当前客户的消费记录
+                                            recordLoadDict[consumerBarcode] = shopcarList
+                                            recordDict[userName] = recordLoadDict
+                                        else:
+                                            recordDict[userName][consumerBarcode] = shopcarList
+                                    print(recordDict)
                                     with open(recordFileDst, 'w', encoding='utf-8') as wf, \
                                          open(goodsFileDst, 'w', encoding='utf-8') as gdf, \
                                          open(accountFileDst, 'w', encoding='utf-8') as acf:
                                         # 更新购买记录
-                                        wf.write(json.dumps(writeFileRecordDict, ensure_ascii=False))
+                                        wf.write(json.dumps(recordDict, ensure_ascii=False))
                                         wf.flush()
                                         # 更新商品库存
                                         gdf.write(json.dumps(goods, ensure_ascii=False))
@@ -296,6 +304,3 @@ while True:
             continue
     else:
         print("输入不正确!")
-
-
-
